@@ -341,43 +341,41 @@ local EclipseM = library:CreateWindow("Misc")
 --Misc Ship Mods:
 local EclipseMS = EclipseM:AddFolder("Ship Mods")
 
-local ShipInstantPlanetWarpData = {
-	["Ships"] = {},
-	["DefaultWarpSpeed"] = {},
-}
+local ShipInstantPlanetWarpData = {}
 
 for i,v in pairs(game.ReplicatedStorage.Stats.Ships:GetChildren()) do
 	if v.Name ~= "Factions" and v.Name ~= "Bombers" and v.Name ~= "Drones" and v.Name ~= "Freighters" then
 		for i2,v2 in pairs(v:GetChildren()) do
-			table.insert(ShipInstantPlanetWarpData["Ships"], v2)
-			table.insert(ShipInstantPlanetWarpData["DefaultWarpSpeed"], v2.Name)
-			ShipInstantPlanetWarpData["DefaultWarpSpeed"][v2.Name] = v2:FindFirstChild("Speed"):FindFirstChild("Warp").Value
+			ShipInstantPlanetWarpData[v2.Name] = v2:FindFirstChild("Speed"):FindFirstChild("Warp").Value
 		end
 	end
 end
 
-EclipseMS:AddToggle({text = "Instant Planet Warp", flag = "InstantPlanetWarp", callback = function(On) end})
-
-spawn(function()
-	while wait() do
-		if library.flags.InstantPlanetWarp == true then
-			for i,v in pairs(ShipInstantPlanetWarpData["Ships"]) do
-				v:FindFirstChild("Speed"):FindFirstChild("Warp").Value = 9999999999
+EclipseMS:AddToggle({text = "Instant Planet Warp", flag = "InstantPlanetWarp", callback = function(On)
+	if On then
+		for i,v in pairs(game.ReplicatedStorage.Stats.Ships:GetChildren()) do
+			if v.Name ~= "Factions" and v.Name ~= "Bombers" and v.Name ~= "Drones" and v.Name ~= "Freighters" then
+				for i2,v2 in pairs(v:GetChildren()) do
+					v2.Speed.Warp.Value = 9999999999
+				end
 			end
-		else
-			for i,v in pairs(ShipInstantPlanetWarpData["Ships"]) do
-				v:FindFirstChild("Speed"):FindFirstChild("Warp").Value = ShipInstantPlanetWarpData["DefaultWarpSpeed"][v.Name]
+		end
+	else
+		for i,v in pairs(game.ReplicatedStorage.Stats.Ships:GetChildren()) do
+			if v.Name ~= "Factions" and v.Name ~= "Bombers" and v.Name ~= "Drones" and v.Name ~= "Freighters" then
+				for i2,v2 in pairs(v:GetChildren()) do
+					v2.Speed.Warp.Value = ShipInstantPlanetWarpData[v2.Name]
+				end
 			end
 		end
 	end
-end)
+end})
 
 local TurretChargeData = {}
 
 for i,v in pairs(game.ReplicatedStorage.Stats.Turrets:GetChildren()) do
 	if string.match(v.Name, "Beam") or string.match(v.Name, "Miner") then
-		table.insert(TurretChargeData, v.Name)
-		TurretChargeData[v.Name] = v.Stats.Charge.Value
+		TurretChargeData[v.Name] = v:FindFirstChild("Stats"):FindFirstChild("Charge").Value
 	end
 end
 
@@ -394,5 +392,10 @@ EclipseMS:AddToggle({text = "No Turret Charge", callback = function(On)
 		end
 	end
 end})
+
+--Misc Gun Mods:
+local EclipseMG = EclipseM:AddFolder("Gun Mods")
+
+
 
 library:Init()
