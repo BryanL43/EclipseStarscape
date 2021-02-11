@@ -1,0 +1,398 @@
+--Init Loaded:
+if game.PlaceId ~= 679715583 then
+	pcall(function()
+		repeat wait(1) until game.StarterGui:CoreGuiEnabled()
+	end)
+else
+	return
+end
+
+--[[Check Fully Loaded:
+local FullyLoaded = false
+game:GetService("LogService").MessageOut:connect(function(msg)
+	if msg == "client loaded" then
+		FullyLoaded = true
+	end
+end)
+
+repeat wait() until FullyLoaded
+
+game.StarterGui:SetCore("SendNotification", {
+	Title = "Eclipse System:";
+	Text = "Successfully Loaded";
+	Duration = 3;
+})]]
+
+--MainScript:
+local library = loadstring(game:HttpGet("https://pastebin.com/raw/z6iRKJJa", true))()
+
+--[[File Save System:
+local DefaultData = {
+	["Starscape"] = {
+	},
+	["UI Toggle"] = "RightShift"
+}
+
+--Init Files:
+local IsDataFile = pcall(function()
+	return readfile("EclipseHubData.txt")
+end)
+
+if not IsDataFile then
+	writefile("EclipseHubData.txt", HttpService:JSONEncode(DefaultData))
+end
+
+--Decode File:
+if IsDataFile then
+	DefaultData = HttpService:JSONDecode(readfile("EclipseHubData.txt"))
+end
+
+function SaveData()
+	pcall(function()
+		writefile("EclipseHubData.txt", HttpService:JSONEncode(DefaultData))
+	end)
+end]]
+
+--Universal Function / Variables:
+local Player = game.Players.LocalPlayer
+local state = require(game:GetService("ReplicatedStorage").Source.Client.Flight.State)
+local vehicle = state:getVehicle()
+local lasers = require(game:GetService("ReplicatedStorage").Source.Client.Flight.Controls.Lasers)
+local turrets = require(game:GetService("ReplicatedStorage").Source.Client.Flight.Controls.Turrets)
+local DestinationSet = require(game.ReplicatedStorage.Source.Client.DataSync.Destinations)
+local economy = require(game.ReplicatedStorage.Source.Client.DataSync.Economy)
+local round = require(game.ReplicatedStorage.Source.Common.Constants.Economy).ROUND_TO
+local Warp = require(game.ReplicatedStorage.Source.Client.Actions.WarpToStar)
+local Link = require(game.ReplicatedStorage.Source.Client.Helpers.Routes)
+
+function FindStar(star)
+	if star ~= nil then
+		local StarLen = string.len(star)
+		local LowerName = string.lower(star)
+		local FoundStar
+		local MapPath
+		if star == "" or star == nil then
+			FoundStar = nil
+			return
+		end
+		if game.ReplicatedStorage.Maps:FindFirstChild("GalaxyMap") then
+			MapPath = game.ReplicatedStorage.Maps.GalaxyMap
+		elseif game.ReplicatedStorage:FindFirstChild("GalaxyMap") then
+			MapPath = game.ReplicatedStorage.GalaxyMap
+		elseif game.Workspace:FindFirstChild("GalaxyMap") then
+			MapPath = game.Workspace.GalaxyMap
+		end
+		for i,v in pairs(MapPath.Sectors:GetChildren()) do
+			for i2,v2 in pairs(v:GetChildren()) do
+				if string.sub(LowerName, 1, StarLen) == string.sub(string.lower(v2.Name), 1, StarLen) then
+					FoundStar = v2.Name
+				end
+			end
+		end
+		return FoundStar
+	end
+end
+
+function GetCurrentStar()
+	return Player.PlayerGui.Overlays.Standard.System.System.Text
+end
+
+function CheckMinerShip()
+	vehicle = state:getVehicle()
+	if vehicle == nil then
+		return
+	end
+	for i,v in pairs(game.ReplicatedStorage.Stats.Ships.Miners:GetChildren()) do
+        if vehicle.Name == v.Name then
+            return true
+        end
+    end
+    return false
+end
+
+function CheckMinerWarShip()
+	vehicle = state:getVehicle()
+	if vehicle == nil then
+		return
+	end
+	if vehicle.Name == "Ozark" then
+		return true
+	elseif vehicle.Name == "Kodiak" then
+		return true
+	else
+		return false
+	end
+end
+
+function CheckHaulerShip()
+	vehicle = state:getVehicle()
+	if vehicle == nil then
+		return
+	end
+	for i,v in pairs(game.ReplicatedStorage.Stats.Ships.Haulers:GetChildren()) do
+        if vehicle.Name == v.Name then
+            return true
+        end
+    end
+    return false
+end
+
+function WarpFunc(location)
+	pcall(function()
+		vehicle = state:getVehicle()
+		if not SafeWarp then
+			Warp(location)
+		else
+			spawn(function()
+				repeat wait() until not game.Players.LocalPlayer.PlayerGui.Overlays.Standard.Flying.Wrapper.HUD.Speed.Warp.Visible
+				wait(.5)
+				vehicle:SetPrimaryPartCFrame(vehicle.PrimaryPart.CFrame + Vector3.new(0, 125000, 0))
+				wait(1.5)
+			end)
+			Warp(location)
+		end
+	end)
+end
+
+--Client Section:
+local EclipseC = library:CreateWindow("Client")
+
+function rounddis(num, numDecimalPlaces)
+	local mult = 10^(numDecimalPlaces or 0)
+	return math.floor(num * mult + 0.5) / mult
+end
+
+function Esp(plr)
+	spawn(function()
+		--Destroy any Folder
+		for i,v in pairs(game.CoreGui.RobloxGui:GetChildren()) do
+			if v.Name == plr.Name.."_ESP" then 
+				v:Destroy()
+			end
+		end
+		--Create Header:
+		local EspHolder = Instance.new("Folder", game.CoreGui.RobloxGui)
+		EspHolder.Name = plr.Name.."_ESP"
+		if plr.Name ~= Player.Name and plr.Character and plr.Character:FindFirstChild('Head') then
+			local BillboardGui = Instance.new("BillboardGui", EspHolder)
+			local TextLabel = Instance.new("TextLabel")
+			BillboardGui.Adornee = plr.Character.Head
+			BillboardGui.Name = plr.Name
+			BillboardGui.Size = UDim2.new(0, 100, 0, 150)
+			BillboardGui.StudsOffset = Vector3.new(0, 1, 0)
+			BillboardGui.AlwaysOnTop = true
+			TextLabel.Parent = BillboardGui
+			TextLabel.BackgroundTransparency = 1
+			TextLabel.Position = UDim2.new(0, 20, 0, -45)
+			TextLabel.Size = UDim2.new(0, 60, 0, 100)
+			TextLabel.Font = Enum.Font.SourceSansSemibold
+			TextLabel.TextSize = 13
+			TextLabel.TextColor3 = Color3.new(1, 1, 1)
+			TextLabel.TextStrokeTransparency = 0
+			TextLabel.TextYAlignment = Enum.TextYAlignment.Bottom
+			plr.CharacterAdded:connect(function()
+				if EspToggle then
+					espLoopFunc:Disconnect()
+					EspHolder:Destroy()
+					repeat wait(1) until plr.Character:FindFirstChild('HumanoidRootPart') and plr.Character:FindFirstChild('Humanoid')
+					Esp(plr)
+				end
+			end)
+			local function espLoop()
+				pcall(function()
+					if game.CoreGui.RobloxGui:FindFirstChild(plr.Name.."_ESP") and plr.Character and plr.Character:FindFirstChild('HumanoidRootPart') and plr.Character:FindFirstChild('Humanoid') then
+						local Ship = nil
+						local pos = rounddis(math.floor((Player.Character.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).magnitude))
+						local Hp = nil
+						if game.Workspace.Ships[plr.Name]:GetChildren()[1] ~= nil then
+							Ship = game.Workspace.Ships[plr.Name]:GetChildren()[1]
+							Hp = rounddis(Ship.ship.shields.Value + Ship.ship.hull.Value)
+						end
+						TextLabel.Text = plr.Name.." | Ship: "..tostring(Ship).." | ".."Ship Hp: "..tostring(Hp).."\nDis: "..tostring(pos)
+					end
+				end)
+			end
+			espLoopFunc = game:GetService("RunService").RenderStepped:Connect(espLoop)
+		end
+	end)
+end
+
+EclipseC:AddToggle({text = "Ship Esp", flag = "ShipEsp", callback = function(On)
+	if On then
+		for i,v in pairs(game.Players:GetChildren()) do
+			Esp(v)
+		end
+	else
+		for i,v in pairs(game.CoreGui.RobloxGui:GetChildren()) do
+			if string.match(v.Name, "_ESP") then 
+				v:Destroy()
+			end
+		end
+	end
+end})
+
+game.Players.PlayerAdded:connect(function(plr)
+	if library.flags.ShipEsp then
+		Esp(plr)
+	end
+end)
+
+game.Players.PlayerRemoving:connect(function(plr)
+	if library.flags.ShipEsp then
+		for i,v in pairs(game.CoreGui.RobloxGui:GetChildren()) do
+			if v.Name == plr.Name.."_ESP" then 
+				v:Destroy()
+			end
+		end
+	end
+end)
+
+EclipseC:AddLabel({text = "Features:"})
+
+EclipseC:AddToggle({text = "Auto Remove Nebulas", flag = "AutoRNebulas", callback = function(On)
+	if On then
+		for i,v in pairs(game.Workspace.Features:GetChildren()) do
+			if v.Name == "Nebula" then
+				v:Destroy()
+			end
+		end
+	end
+end})
+
+if library.flags.AutoRNebulas then
+	for i,v in pairs(game.Workspace.Features:GetChildren()) do
+		if v.Name == "Nebula" then
+			v:Destroy()
+		end
+	end
+end
+
+local MTAccessDB = false
+EclipseC:AddButton({text = "Military Station Access", callback = function()
+	if not MTAccessDB then
+		MTAccessDB = true
+		for i,v in pairs(game.Workspace.Stations:GetChildren()) do
+			for i2,v2 in pairs(v:GetChildren()) do
+				if v2.Name == "Docking" and v2:FindFirstChild("Boundaries") then
+					v2.Boundaries:Destroy()
+				end
+			end
+		end
+	end
+end})
+
+EclipseC:AddLabel({text = "Auto Warp:"})
+
+local AutoWarpBox
+
+EclipseC:AddBox({text = "Auto Warp Destination", flag = "typed", value = "", callback = function(val)
+	if not typed then
+		typed = true
+		local Star = FindStar(val)
+		if Star ~= nil and GoingTo == "" then
+			DestinationSet.setContents({tostring(Star)})
+			Destination = tostring(Star)
+			AutoWarpDestination = Star
+			AutoWarpBox.Text = Star
+		elseif Star == nil then
+			AutoWarpBox.Text = "System Not Found"
+			wait(.5)
+			AutoWarpBox.Text = ""
+		end
+		typed = false
+	end
+end})
+
+--[[ inport when data is done
+EclipseM:AddToggle({text = "Auto Warp", flag = "AutoWarp", callback = function(On)
+	if On then
+		if AutoWarpDestination ~= "" and Link.getNextSystemName() ~= nil and GoingTo == "" and state:getVehicle() ~= nil then
+			WarpFunc(game.ReplicatedStorage.Maps.SystemMap.Objects.Stars[Link.getNextSystemName()].Stats.LinkedStar.Value)
+		elseif AutoWarpDestination == "" then
+			game.StarterGui:SetCore("SendNotification", {
+				Title = "Warning!";
+				Text = "Destination Not Set";
+				Duration = 3;
+			})
+		elseif GoingTo ~= "" then
+			game.StarterGui:SetCore("SendNotification", {
+				Title = "Warning!";
+				Text = "Auto Spice Is Running Currently";
+				Duration = 3;
+			})
+		elseif state:getVehicle() == nil then
+			game.StarterGui:SetCore("SendNotification", {
+				Title = "Warning!";
+				Text = "You Are Not In A Ship";
+				Duration = 3;
+			})
+		end
+	else
+		--update data
+	end
+end})]]
+
+--AutoFarm Section:
+local EclipseA = library:CreateWindow("Autofarms")
+
+--Misc Section:
+local EclipseM = library:CreateWindow("Misc")
+
+--Misc Ship Mods:
+local EclipseMS = EclipseM:AddFolder("Ship Mods")
+
+local ShipInstantPlanetWarpData = {
+	["Ships"] = {},
+	["DefaultWarpSpeed"] = {},
+}
+
+for i,v in pairs(game.ReplicatedStorage.Stats.Ships:GetChildren()) do
+	if v.Name ~= "Factions" and v.Name ~= "Bombers" and v.Name ~= "Drones" and v.Name ~= "Freighters" then
+		for i2,v2 in pairs(v:GetChildren()) do
+			table.insert(ShipInstantPlanetWarpData["Ships"], v2)
+			table.insert(ShipInstantPlanetWarpData["DefaultWarpSpeed"], v2.Name)
+			ShipInstantPlanetWarpData["DefaultWarpSpeed"][v2.Name] = v2:FindFirstChild("Speed"):FindFirstChild("Warp").Value
+		end
+	end
+end
+
+EclipseMS:AddToggle({text = "Instant Planet Warp", flag = "InstantPlanetWarp", callback = function(On) end})
+
+spawn(function()
+	while wait() do
+		if library.flags.InstantPlanetWarp == true then
+			for i,v in pairs(ShipInstantPlanetWarpData["Ships"]) do
+				v:FindFirstChild("Speed"):FindFirstChild("Warp").Value = 9999999999
+			end
+		else
+			for i,v in pairs(ShipInstantPlanetWarpData["Ships"]) do
+				v:FindFirstChild("Speed"):FindFirstChild("Warp").Value = ShipInstantPlanetWarpData["DefaultWarpSpeed"][v.Name]
+			end
+		end
+	end
+end)
+
+local TurretChargeData = {}
+
+for i,v in pairs(game.ReplicatedStorage.Stats.Turrets:GetChildren()) do
+	if string.match(v.Name, "Beam") or string.match(v.Name, "Miner") then
+		table.insert(TurretChargeData, v.Name)
+		TurretChargeData[v.Name] = v.Stats.Charge.Value
+	end
+end
+
+EclipseMS:AddToggle({text = "No Turret Charge", callback = function(On)
+	if On then
+		for i,v in pairs(game.ReplicatedStorage.Stats.Turrets:GetChildren()) do
+			if string.match(v.Name, "Beam") or string.match(v.Name, "Miner") then
+				v.Stats.Charge.Value = 0
+			end
+		end
+	else
+		for i,v in pairs(TurretChargeData) do
+			game.ReplicatedStorage.Stats.Turrets[i].Stats.Charge.Value = v
+		end
+	end
+end})
+
+library:Init()
